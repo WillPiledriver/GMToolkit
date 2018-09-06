@@ -7,10 +7,11 @@ class Characters:
     def __init__(self, client, game_name):
         self.game_name = game_name
         self.collection = client[game_name]["characters"]
-        self._ids = [None, None, None]
+        self._ids = [None, None, None, None]
         self.attributes = {}
         self.skills = {}
         self.secondary = {}
+        self.bonus = {}
         self.load()
         self.t_list = []
         self.break_loop = False
@@ -20,11 +21,13 @@ class Characters:
         self.collection.update({"_id": self._ids[0]}, {"attributes": self.attributes}, True)
         self.collection.update({"_id": self._ids[1]}, {"skills":     self.skills},     True)
         self.collection.update({"_id": self._ids[2]}, {"secondary":  self.secondary},  True)
+        self.collection.update({"_id": self._ids[3]}, {"bonus":      self.bonus},      True)
 
     def load(self):
         self.attributes = self.collection.find_one({"attributes": {"$exists": True}})
-        self.skills =     self.collection.find_one({"skills":     {"$exists": True}})
-        self.secondary =  self.collection.find_one({"secondary":  {"$exists": True}})
+        self.skills = self.collection.find_one({"skills": {"$exists": True}})
+        self.secondary = self.collection.find_one({"secondary": {"$exists": True}})
+        self.bonus = self.collection.find_one({"bonus": {"$exists": True}})
 
         if self.attributes is None:
             print("Creating new attributes document")
@@ -38,11 +41,16 @@ class Characters:
             print("Creating new secondary document")
             self.collection.insert_one({"secondary": {}})
             self.secondary = self.collection.find_one({"secondary": {"$exists": True}})
+        if self.bonus is None:
+            print("Creating new bonus document")
+            self.collection.insert_one({"bonus": {}})
+            self.bonus = self.collection.find_one({"bonus": {"$exists": True}})
 
-        self._ids = [self.attributes["_id"], self.skills["_id"], self.secondary["_id"]]
+        self._ids = [self.attributes["_id"], self.skills["_id"], self.secondary["_id"], self.bonus["_id"]]
         self.attributes = self.attributes["attributes"]
         self.skills = self.skills["skills"]
         self.secondary = self.secondary["secondary"]
+        self.bonus = self.bonus["bonus"]
 
     def edit_menu(self, choice=None):
         '''
@@ -132,34 +140,68 @@ class Characters:
 
 class Party:
 
-    def __init__(self, client, game_name):
+    def __init__(self, client, game_name, characters_handle):
+        self.ch = characters_handle
+        self.game_name = game_name
         self.party = {}
         self.break_loop = False
 
     def party_menu(self, choice=None):
-        '''
-        uses recursion to select which character global to edit
-        '''
-        if choice is None:
-            self.break_loop = False
-        while self.break_loop is False:
-            menu = [key for key in self.party.keys()]
+        menu = [key for key in list(self.party.keys())]
+        while choice != len(menu) + 1:
             if choice is None:
-                self.party_menu(choice=gen_menu(menu + ["Add new party member", "Back"],
-                                                "Edit Party Menu"))
+                choice = gen_menu(menu + ["Add new party member", "Back"], "Edit Party Menu")
+                continue
             else:
-                if choice == len(menu) + 1:
-                    self.break_loop = True
-                else:
-                    if self.edit_member((menu[choice], None)[choice == len(menu)]):
-                        choice = None
+                if choice == len(menu):
+                    name = self.edit_member(None)
+                    menu = [key for key in list(self.party.keys())]
+                    choice = menu.index(name)
+                    continue
+                if self.edit_member(menu[choice]):
+                    choice = None
 
-    def edit_member(self, choice):
-        if choice is None:
-            
-        elif choice in self.party:
+    def edit_member(self, c):
+        if c is None:
+            print("Add new")
+            new_name = input("Character nickname> ")
+            self.party[new_name] = {}
+            self.party[new_name]["attributes"] = {key: dict(self.ch.attributes[key]) for key in self.ch.attributes}
+            return new_name
+        elif c in self.party:
             print("Edit")
+            for attribute in self.party[c]["attributes"]:
+                self.party[c]["attributes"][attribute]["val"] = int(input(
+                    "Enter value for {} ({})> ".format(self.party[c]["attributes"][attribute]["desc"], attribute)))
+
+            self.populate(c, self.party[c]["attributes"])
+
+            inp = (None, "Y")[input("Would you like to enter bonuses? ").upper() == "Y"]
+            while inp:
+                inp = input("VAR_NAME> ").upper()
+                if inp is None:
+                    break
+                value = int(input("VAL> "))
+                self.party[c]["bonus"][inp] = value
+                
             return True
         else:
-            inp = input("Enter new character name")
+            print("what?")
+            return False
 
+    def populate(self, name, attributes):
+        self.party[name]["skills"] = {key: dict(self.ch.skills[key]) for key in self.ch.skills}
+        self.party[name]["secondary"] = {key: dict(self.ch.secondary[key]) for key in self.ch.secondary}
+        self.party[name]["bonus"] = {}
+
+
+        for skill in self.ch.skills.keys():
+            self.party[name]["skills"][skill]["val"] = self.ch.calc_base(attributes, self.ch.skills[skill]["eq"])
+            print("{}: {}%".format(self.ch.skills[skill]["desc"], self.ch.calc_base(attributes,
+                                                                                    self.ch.skills[skill]["eq"])))
+
+        for secondary in self.ch.secondary.keys():
+            self.party[name]["secondary"][secondary]["val"] = self.ch.calc_base(attributes,
+                                                                                self.ch.secondary[secondary]["eq"])
+            print("{}: {}".format(self.ch.secondary[secondary]["desc"],
+                                  self.ch.calc_base(attributes, self.ch.secondary[secondary]["eq"])))
