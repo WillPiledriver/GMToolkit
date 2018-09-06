@@ -77,7 +77,7 @@ class Characters:
 
         self.t_list = [self.attributes, self.skills, self.secondary]
         stuff = ["Attributes", "Skills", "Secondary Attributes"]
-        if 0 > category > 3: #This whole if statement is probably useless
+        if 0 > category > 3:  # This whole if statement is probably useless
             return False
         else:
             inp = gen_menu(list(self.t_list[category].keys()) + ["Add {}".format(stuff[category]), "Back"], "Edit {}".
@@ -143,8 +143,25 @@ class Party:
     def __init__(self, client, game_name, characters_handle):
         self.ch = characters_handle
         self.game_name = game_name
+        self.collection = client[self.game_name]["party"]
         self.party = {}
         self.break_loop = False
+        self.load()
+        pass
+
+    def save(self):
+        for name in self.party:
+            self.collection.update({name: {"$exists": True}}, {name: self.party[name]}, True)
+
+    def load(self):
+
+        total = self.collection.find()
+        load_this = {}
+        for i in range(total.count()):
+            del total[i]["_id"]
+            load_this.update(total[i])
+        del load_this["_id"]
+        self.party = load_this
 
     def party_menu(self, choice=None):
         menu = [key for key in list(self.party.keys())]
@@ -179,11 +196,11 @@ class Party:
             inp = (None, "Y")[input("Would you like to enter bonuses? ").upper() == "Y"]
             while inp:
                 inp = input("VAR_NAME> ").upper()
-                if inp is None:
+                if len(inp) == 0:
                     break
                 value = int(input("VAL> "))
                 self.party[c]["bonus"][inp] = value
-                
+            self.save()
             return True
         else:
             print("what?")
@@ -193,7 +210,6 @@ class Party:
         self.party[name]["skills"] = {key: dict(self.ch.skills[key]) for key in self.ch.skills}
         self.party[name]["secondary"] = {key: dict(self.ch.secondary[key]) for key in self.ch.secondary}
         self.party[name]["bonus"] = {}
-
 
         for skill in self.ch.skills.keys():
             self.party[name]["skills"][skill]["val"] = self.ch.calc_base(attributes, self.ch.skills[skill]["eq"])
