@@ -147,7 +147,6 @@ class Party:
         self.party = {}
         self.break_loop = False
         self.load()
-        pass
 
     def save(self):
         for name in self.party:
@@ -221,3 +220,25 @@ class Party:
                                                                                 self.ch.secondary[secondary]["eq"])
             print("{}: {}".format(self.ch.secondary[secondary]["desc"],
                                   self.ch.calc_base(attributes, self.ch.secondary[secondary]["eq"])))
+
+class NPC:
+
+    def __init__(self, enemies_file=None):
+        self.enemies = {}
+        if enemies_file is None:
+            self.enemies_file = "data/enemies.csv"
+        else:
+            self.enemies_file = enemies_file
+        self.load()
+        pass
+
+
+    def load(self):
+        with(open(self.enemies_file)) as csvfile:
+            enemies = csv.DictReader(csvfile)
+            for row in enemies:
+
+                for key in row.keys():
+                    print("{}: {}".format(key, row[key]))
+                    if key == "NAME":
+                        continue

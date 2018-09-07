@@ -2,6 +2,7 @@ from os import system
 from pymongo import MongoClient
 from pprint import pprint
 import math
+import csv
 
 
 def clear(): system("cls")

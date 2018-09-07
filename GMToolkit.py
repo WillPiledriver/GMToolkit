@@ -1,5 +1,5 @@
 from helper import *
-from Characters import Characters, Party
+from Characters import Characters, Party, NPC
 from random import randint
 
 
@@ -17,5 +17,6 @@ client = MongoClient()
 db_name = input("Enter name of game> ")
 c = Characters(client, db_name)
 p = Party(client, db_name, c)
+npc = NPC()
 while True:
     main_menu()
