@@ -221,6 +221,7 @@ class Party:
             print("{}: {}".format(self.ch.secondary[secondary]["desc"],
                                   self.ch.calc_base(attributes, self.ch.secondary[secondary]["eq"])))
 
+
 class NPC:
 
     def __init__(self, enemies_file=None):
@@ -232,13 +233,13 @@ class NPC:
         self.load()
         pass
 
-
     def load(self):
         with(open(self.enemies_file)) as csvfile:
-            enemies = csv.DictReader(csvfile)
-            for row in enemies:
-
+            ef = csv.DictReader(csvfile)
+            for row in ef:
+                self.enemies[row["NAME"]] = {}
                 for key in row.keys():
-                    print("{}: {}".format(key, row[key]))
+                    #print("{}: {}".format(key, row[key]))
                     if key == "NAME":
                         continue
+                    self.enemies[row["NAME"]][key] = row[key]
