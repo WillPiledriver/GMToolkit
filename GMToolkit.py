@@ -1,6 +1,6 @@
 from helper import *
 from Characters import Characters, Party, NPC
-from Combat import Combat, Weapons, Armor
+from Combat import Combat, Weapons, Armors
 
 
 
@@ -16,9 +16,11 @@ def main_menu():
 client = MongoClient()
 db_name = "fallout" #input("Enter name of game> ")
 c = Characters(client, db_name)
-p = Party(client, db_name, c)
+p = Party(client, db_name, characters_handle=c)
 w = Weapons(csv_file="data/weapons.csv")
-npc = NPC(weapons_handle=w)
+a = Armors(csv_file="data/armors.csv")
+npc = NPC(weapons_handle=w, characters_handle=c)
+npc.generate_enemy("Scumbag")
 
 while True:
     main_menu()

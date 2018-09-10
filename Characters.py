@@ -226,12 +226,21 @@ class Party:
             print("{}: {}".format(self.ch.secondary[secondary]["desc"],
                                   self.ch.calc_base(attributes, self.ch.secondary[secondary]["eq"])))
 
+        for key, value in self.party[name]["bonus"].items():
+            if key in self.party[name]["skills"]:
+                self.party[name]["skills"][key]["val"] += value
+            elif key in self.ch.secondary:
+                self.party[name]["secondary"][key]["val"] += value
+            else:
+                print("bonus {} does nothing".format(key))
+        self.party[name]["bonus"] = dict()
 
 class NPC:
 
-    def __init__(self, weapons_handle, csv_file=None):
+    def __init__(self, weapons_handle, characters_handle, csv_file=None):
         self.enemies = {}
         self.wh = weapons_handle
+        self.ch = characters_handle
         self.csv = (csv_file, "data/enemies.csv")[csv_file is None]
         self.load()
 
@@ -247,6 +256,7 @@ class NPC:
 
     def generate_enemy(self, name, weapon=None, armor=None):
         enemy = self.enemies[name]
+        enemy["NAME"] = name
         randnum_match = re.compile("^[0-9]+-[0-9]+$")
         num_match = re.compile("^[0-9]+$")
         for key, value in enemy.items():
@@ -295,6 +305,32 @@ class NPC:
                 else:
                     r = int(splt[1])
                 enemy["BONUS"] = {splt[0]: r}
-
+        self.populate(enemy)
         return enemy
-    
+
+    def populate(self, enemy):
+        result = dict()
+        result["skills"] = {key: dict(self.ch.skills[key]) for key in self.ch.skills}
+        result["secondary"] = {key: dict(self.ch.secondary[key]) for key in self.ch.secondary}
+        result["weapon"] = enemy["WEAPON"]
+        result["armor"] = enemy["ARMOR"]
+        result["bonus"] = enemy["BONUS"]
+
+        attributes = {key.upper(): {"val": enemy[key]} for key, value in self.ch.attributes.items()
+                      if key.upper() in enemy}
+
+        for skill in self.ch.skills.keys():
+            result["skills"][skill]["val"] = self.ch.calc_base(attributes, self.ch.skills[skill]["eq"])
+
+        for secondary in self.ch.secondary.keys():
+            result["secondary"][secondary]["val"] = self.ch.calc_base(attributes, self.ch.secondary[secondary]["eq"])
+
+        for key, value in result["bonus"].items():
+            if key in result["skills"]:
+                result["skills"][key]["val"] += value
+            elif key in self.ch.secondary:
+                result["secondary"][key]["val"] += value
+            else:
+                print("bonus {} does nothing".format(key))
+        result["bonus"] = dict()
+        return result
