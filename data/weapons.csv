@@ -1,4 +1,4 @@
-"NAME","AP","TYPE","DAMAGE","DB","RANGE","AMMO"
+"NAME","AP","TYPE","DMG","DB","RANGE","AMMO"
 "molerat bite",3,"U","1d4",0,1,
 "knife",3,"M","1d10","{MD}",1,
 "switchblade",3,"M","1d6","{MD}",1,

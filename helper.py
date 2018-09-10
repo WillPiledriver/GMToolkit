@@ -48,3 +48,16 @@ def gen_menu(options, comment=None, cls=True):
         except Exception as e:
             print("Please input a number.")
     return option - 1
+
+
+def roll(s, mod=0):
+    if re.match(re.compile("^[0-9]+d[0-9]+$"), s.lower()):
+        p = s.lower().split("d")
+        rolls = [rand.randint(1, int(p[1])) for i in range(int(p[0]))]
+    elif re.match(re.compile("^[0-9]+$"), s):
+        rolls = [int[s]]
+    else:
+        print("You fucked up")
+        rolls = [0]
+        pause()
+    return rolls, sum(rolls) + mod
