@@ -1,6 +1,6 @@
 from helper import *
 from Characters import Characters, Party, NPC
-from random import randint
+from Combat import Combat, Weapons, Armor
 
 
 
@@ -14,9 +14,11 @@ def main_menu():
 
 
 client = MongoClient()
-db_name = input("Enter name of game> ")
+db_name = "fallout" #input("Enter name of game> ")
 c = Characters(client, db_name)
 p = Party(client, db_name, c)
-npc = NPC()
+w = Weapons(csv_file="data/weapons.csv")
+npc = NPC(weapons_handle=w)
+
 while True:
     main_menu()

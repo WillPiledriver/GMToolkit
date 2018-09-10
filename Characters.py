@@ -159,7 +159,8 @@ class Party:
         for i in range(total.count()):
             del total[i]["_id"]
             load_this.update(total[i])
-        del load_this["_id"]
+        if "_id" in load_this:
+            del load_this["_id"]
         self.party = load_this
 
     def party_menu(self, choice=None):
@@ -187,8 +188,12 @@ class Party:
         elif c in self.party:
             print("Edit")
             for attribute in self.party[c]["attributes"]:
-                self.party[c]["attributes"][attribute]["val"] = int(input(
-                    "Enter value for {} ({})> ".format(self.party[c]["attributes"][attribute]["desc"], attribute)))
+                inp = input(
+                    "Enter value for {} ({})> ".format(self.party[c]["attributes"][attribute]["desc"], attribute))
+                if re.match(re.compile("^[0-9]+$"), inp):
+                    self.party[c]["attributes"][attribute]["val"] = int(inp)
+                else:
+                    self.party[c]["attributes"][attribute]["val"] = inp
 
             self.populate(c, self.party[c]["attributes"])
 
@@ -224,22 +229,72 @@ class Party:
 
 class NPC:
 
-    def __init__(self, enemies_file=None):
+    def __init__(self, weapons_handle, csv_file=None):
         self.enemies = {}
-        if enemies_file is None:
-            self.enemies_file = "data/enemies.csv"
-        else:
-            self.enemies_file = enemies_file
+        self.wh = weapons_handle
+        self.csv = (csv_file, "data/enemies.csv")[csv_file is None]
         self.load()
-        pass
 
     def load(self):
-        with(open(self.enemies_file)) as csvfile:
+        with(open(self.csv)) as csvfile:
             ef = csv.DictReader(csvfile)
             for row in ef:
                 self.enemies[row["NAME"]] = {}
                 for key in row.keys():
-                    #print("{}: {}".format(key, row[key]))
                     if key == "NAME":
                         continue
                     self.enemies[row["NAME"]][key] = row[key]
+
+    def generate_enemy(self, name, weapon=None, armor=None):
+        enemy = self.enemies[name]
+        randnum_match = re.compile("^[0-9]+-[0-9]+$")
+        num_match = re.compile("^[0-9]+$")
+        for key, value in enemy.items():
+            if re.match(num_match, value):
+                # Any integer
+                enemy[key] = int(value)
+            elif re.match(randnum_match, value):
+                # Random number range
+                splt = value.split("-")
+                r = rand.randint(int(splt[0]), int(splt[1]))
+                enemy[key] = r
+            if value.count(",") > 0:
+                # random list of strings
+                enemy[key] = value.split(",")
+
+        if weapon is None:
+            if isinstance(enemy["WEAPON"], (list,)):
+                # Random weapon
+                enemy["WEAPON"] = enemy["WEAPON"][rand.randint(0, len(enemy["WEAPON"])-1)]
+        else:
+            enemy["WEAPON"] = weapon
+        if armor is None:
+            if isinstance(enemy["ARMOR"], (list,)):
+                # Random armor
+                enemy["ARMOR"] = enemy["ARMOR"][rand.randint(0, len(enemy["ARMOR"])-1)]
+        else:
+            enemy["ARMOR"] = armor
+
+        if "BONUS" in enemy:
+            # Parse and restructure bonuses
+            if isinstance(enemy["BONUS"], (list,)):
+                bns = {}
+                for b in enemy["BONUS"]:
+                    splt = b.split(" ")
+                    if re.match(randnum_match, splt[1]):
+                        splt2 = splt[1].split("-")
+                        bns[splt[0]] = rand.randint(int(splt2[0]), int(splt2[1]))
+                    else:
+                        bns[splt[0]] = int(splt[1])
+                enemy["BONUS"] = bns
+            else:
+                splt = enemy["BONUS"].split(" ")
+                if re.match(randnum_match, splt[1]):
+                    splt2 = splt[1].split("-")
+                    r = rand.randint(int(splt2[0]), int(splt2[1]))
+                else:
+                    r = int(splt[1])
+                enemy["BONUS"] = {splt[0]: r}
+
+        return enemy
+    

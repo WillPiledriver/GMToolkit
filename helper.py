@@ -3,6 +3,8 @@ from pymongo import MongoClient
 from pprint import pprint
 import math
 import csv
+import re
+import random as rand
 
 
 def clear(): system("cls")
