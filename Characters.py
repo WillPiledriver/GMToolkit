@@ -163,6 +163,9 @@ class Party:
             del load_this["_id"]
         self.party = load_this
 
+        for member in list(self.party.keys()):
+            self.populate(member, self.party[member]["attributes"])
+
     def party_menu(self, choice=None):
         menu = [key for key in list(self.party.keys())]
         while choice != len(menu) + 1:
@@ -180,32 +183,44 @@ class Party:
 
     def edit_member(self, c):
         if c is None:
-            print("Add new")
             new_name = input("Character nickname> ")
             self.party[new_name] = {}
             self.party[new_name]["attributes"] = {key: dict(self.ch.attributes[key]) for key in self.ch.attributes}
             return new_name
         elif c in self.party:
-            print("Edit")
-            for attribute in self.party[c]["attributes"]:
-                inp = input(
-                    "Enter value for {} ({})> ".format(self.party[c]["attributes"][attribute]["desc"], attribute))
-                if re.match(re.compile("^[0-9]+$"), inp):
-                    self.party[c]["attributes"][attribute]["val"] = int(inp)
-                else:
-                    self.party[c]["attributes"][attribute]["val"] = inp
+            which = gen_menu(["Attributes", "Bonuses", "Armor", "Weapon"], comment="Edit party member {}".format(c))
 
-            self.populate(c, self.party[c]["attributes"])
+            if which == 0:
+                for attribute in self.party[c]["attributes"]:
+                    inp = input(
+                        "Enter value for {} ({})> ".format(self.party[c]["attributes"][attribute]["desc"], attribute))
+                    if re.match(re.compile("^[0-9]+$"), inp):
+                        self.party[c]["attributes"][attribute]["val"] = int(inp)
+                    else:
+                        self.party[c]["attributes"][attribute]["val"] = inp
 
-            inp = (None, "Y")[input("Would you like to enter bonuses? ").upper() == "Y"]
-            while inp:
-                inp = input("VAR_NAME> ").upper()
-                if len(inp) == 0:
-                    break
-                value = int(input("VAL> "))
-                self.party[c]["bonus"][inp] = value
-            self.save()
-            return True
+                self.populate(c, self.party[c]["attributes"])
+                self.save()
+                return True
+
+            elif which == 1:
+                while True:
+                    inp = input("VAR_NAME> ").upper()
+                    if len(inp) == 0:
+                        break
+                    value = int(input("VAL> "))
+                    self.party[c]["bonus"][inp] = value
+                self.save()
+                return True
+
+            elif which == 2:
+                self.party[c]["armor"] = input("Armor> ")
+                self.save()
+                return True
+            elif which == 3:
+                self.party[c]["weapon"] = input("Weapon> ")
+                self.save()
+                return True
         else:
             print("what?")
             return False
@@ -216,19 +231,16 @@ class Party:
 
         for skill in self.ch.skills.keys():
             self.party[name]["skills"][skill]["val"] = self.ch.calc_base(attributes, self.ch.skills[skill]["eq"])
-            print("{}: {}%".format(self.ch.skills[skill]["desc"], self.ch.calc_base(attributes,
-                                                                                    self.ch.skills[skill]["eq"])))
 
         for secondary in self.ch.secondary.keys():
             self.party[name]["secondary"][secondary]["val"] = self.ch.calc_base(attributes,
                                                                                 self.ch.secondary[secondary]["eq"])
-            print("{}: {}".format(self.ch.secondary[secondary]["desc"],
-                                  self.ch.calc_base(attributes, self.ch.secondary[secondary]["eq"])))
+
 
 class NPC:
 
     def __init__(self, weapons_handle, characters_handle, csv_file=None):
-        self.enemies = {}
+        self.enemies = dict()
         self.wh = weapons_handle
         self.ch = characters_handle
         self.csv = (csv_file, "data/enemies.csv")[csv_file is None]

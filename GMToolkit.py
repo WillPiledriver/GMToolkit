@@ -17,7 +17,7 @@ p = Party(client, db_name, characters_handle=c)
 w = Weapons(csv_file="data/weapons.csv")
 a = Armors(csv_file="data/armors.csv")
 npc = NPC(weapons_handle=w, characters_handle=c)
-combat = Combat(client, db_name, npc, w, a, c)
+combat = Combat(client, db_name, npc, w, a, c, p)
 
 while True:
     main_menu()

@@ -5,6 +5,7 @@ import math
 import csv
 import re
 import random as rand
+from operator import itemgetter
 
 
 def clear(): system("cls")
