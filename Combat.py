@@ -12,6 +12,7 @@ class Combat:
         self.break_loop = False
         self.sessions = dict()
         self.load()
+        self.temp = None
 
     def load(self):
         total = self.collection.find()
@@ -138,11 +139,20 @@ class Combat:
             for c in combine_these:
                 _session[combatant_name].update(session[combatant_name][c])
 
+
         for combatant_name in list(_session.keys()):
             for var in list(_session[combatant_name].keys()):
                 _session[combatant_name][var] = _session[combatant_name][var]["val"]
-        
-        # Calculate turn order based on SE (sequence)
+            _session[combatant_name]["bonus"] = session[combatant_name]["bonus"]
+            if self.is_party(combatant_name) is False:
+                _session[combatant_name]["XP"] = int(self.npc.enemies[combatant_name]["XP"])
+            else:
+                _session[combatant_name]["XP"] = 0
+
+
+
+
+                # Calculate turn order based on SE (sequence)
         turn_order = list()
         for combatant_name in list(_session.keys()):
             turn_order.append((combatant_name, _session[combatant_name]["SE"]))
@@ -170,7 +180,141 @@ class Combat:
             wep["NAME"] = w
             _session[combatant_name]["weapon"] = wep
 
-        pass
+        # Generate Bonuses
+        for combatant_name in list(_session.keys()):
+            if len(_session[combatant_name]["bonus"]) > 0:
+                for k, v in _session[combatant_name]["bonus"].items():
+                    _session[combatant_name][k] += v
+                _session[combatant_name]["bonus"] = {}
+            _session[combatant_name]["AC"] += _session[combatant_name]["armor"]["AC"]
+            if len(_session[combatant_name]["armor"]["BONUS"]) > 0:
+                for k, v in _session[combatant_name]["armor"]["BONUS"].items():
+                    _session[combatant_name][k] += v
+
+        party_members = [name for name in list(_session.keys()) if self.is_party(name)]
+        enemy_members = [name for name in list(_session.keys()) if self.is_party(name) is False]
+        # Turn Order
+        round = 0
+        total_xp = 0
+        while len(party_members) > 0 and len(enemy_members) > 0:
+            round += 1
+            turn = 0
+            for (name, seq) in turn_order:
+                ap_used = 0
+                ap = _session[name]["AP"]
+                turn += 1
+                print("\n" + "*"*79)
+                in_party = self.is_party(name)
+                weapon = _session[name]["weapon"]
+                attack = ["Attack Target", "Attack Random"]
+                members = (party_members, enemy_members)[in_party]
+                while ap_used <= ap:
+                    if ap_used + weapon["AP"] > ap:
+                        attack = []
+                    menu = attack + ["Set HP", "Pass"]
+                    choice = gen_menu(menu, "{}'s turn\t\tAP: {}\t\tHP: {}".format(name, ap - ap_used, _session[name]["HP"]), False)
+                    if (choice == 0) and (len(attack) > 0):
+                        # Attack Target
+                        defender = members[gen_menu(["{}\n\tWeapon: {}\t\tArmor: {}\t\tHP: {}"
+                                                 .format(enemy, _session[enemy]["weapon"]["NAME"],
+                                                         _session[enemy]["armor"]["NAME"],
+                                                         _session[enemy]["HP"])
+                                                 for enemy in members], "Choose target", False)]
+                        ap_used += weapon["AP"]
+
+                    elif (choice == len(attack) - 1) and (len(attack) > 0):
+                        # Attack Random
+                        defender = rand.choice(members)
+                        ap_used += weapon["AP"]
+
+                    elif choice == len(menu) - 2:
+                        # Set HP
+                        _session[name]["HP"] = int(input("New HP> "))
+                        continue
+                    elif choice == len(menu) - 1:
+                        break
+                    defender_ac = _session[defender]["AC"]
+
+                    ammo_damage = 0
+                    ammo = None
+                    if weapon["TYPE"] == "SG":
+                        ammo = self.wh.ammo[weapon["AMMO"]]
+                        ammo_damage = roll(ammo["DMG"])[1]
+                        defender_ac += ammo["AC"]
+                    else:
+                        pass
+                    print("_"*79)
+                    print("{} is attacking {} with a {}".format(name, defender, weapon["NAME"]))
+                    if in_party:
+                        r = input("roll to hit> ")
+                        if r == '':
+                            roll_to_hit = roll("1d100")[1]
+                        else:
+                            roll_to_hit = int(r)
+                    else:
+                        roll_to_hit = roll("1d100")[1]
+
+                    need = _session[name][weapon["TYPE"]] - defender_ac
+                    print("Roll to hit: {}\n\tNeed: {}".format(roll_to_hit, need))
+
+                    if roll_to_hit <= _session[name]["CRIT"]:
+                        print("Critical hit")
+                    elif roll_to_hit > 97:
+                        print("Critical Failure")
+                        continue
+                    elif roll_to_hit <= need:
+                        pass
+                    else:
+                        print("Attack missed")
+                        continue
+                    exec("self.temp = " + weapon["DB"].replace("{MD}", str(_session[name]["MD"])))
+
+                    if in_party:
+                        r = input("roll for damage> ")
+                        if r == '':
+                            roll_for_damage = roll(weapon["DMG"])[1]
+                        else:
+                            roll_for_damage = int(r)
+                    else:
+                        roll_for_damage = roll(weapon["DMG"])[1]
+
+                    damage_bonus = self.temp
+
+                    if ammo_damage > 0:
+                        if in_party:
+                            r = input("roll for bullet damage> ")
+                            if r == '':
+                                ammo_damage = roll(ammo["DMG"])[1]
+                            else:
+                                ammo_damage = int(r)
+                        damage_bonus += ammo_damage
+                    init_dmg = ammo_damage + damage_bonus + roll_for_damage
+                    print("{}dmg + {} bonus = {} TOTAL".format(roll_for_damage, damage_bonus, init_dmg))
+
+                    # Final damage
+
+                    dt = _session[defender]["armor"]["N"][0]
+                    dr = _session[defender]["armor"]["N"][1]
+
+                    if weapon["TYPE"] == "SG":
+                        dt = dt * ammo["DT"]
+                        dr += ammo["DR"]
+                    real_damage = (init_dmg - dt) - math.floor((init_dmg - dt) * (dr / 100))
+                    print("After damage reduction: {}".format(real_damage))
+                    _session[defender]["HP"] -= real_damage
+
+                    if _session[defender]["HP"] < 1:
+                        total_xp += _session[defender]["XP"]
+                        print("{} HAS BEEN SLAIN GRANTING {} XP".format(defender, _session[defender]["XP"]))
+                        if self.is_party(defender):
+                            party_members.remove(defender)
+                        else:
+                            enemy_members.remove(defender)
+                        del _session[defender]
+                        break
+
+        print("Combat complete.\n\tXP earned: {}".format(total_xp))
+
         
         
 
@@ -179,7 +323,9 @@ class Weapons:
     def __init__(self, csv_file=None):
         self.csv = (csv_file, "data/weapons.csv")[csv_file is None]
         self.weapons = dict()
+        self.ammo = dict()
         self.load()
+        self.load_ammo()
 
     def load(self):
         with(open(self.csv)) as csvfile:
@@ -191,7 +337,26 @@ class Weapons:
                         continue
                     self.weapons[row["NAME"]][key] = row[key]
 
+    def load_ammo(self):
+        ints = ["AC", "DR", "DT"]
+        with(open("data/ammo.csv")) as csvfile:
+            ef = csv.DictReader(csvfile)
+            for row in ef:
+                self.ammo[row["NAME"]] = {}
+                for key in row.keys():
+                    if key == "NAME":
+                        continue
+                    elif key in ints:
+                        self.ammo[row["NAME"]][key] = int(row[key])
+                        continue
+                    self.ammo[row["NAME"]][key] = row[key]
+
     def generate_weapon(self, weapon):
+        ints = ["AP", "RANGE"]
+        for k, v in self.weapons[weapon].items():
+            if k in ints:
+                self.weapons[weapon][k] = int(v)
+
         return self.weapons[weapon]
 
 

@@ -56,7 +56,7 @@ def roll(s, mod=0):
         p = s.lower().split("d")
         rolls = [rand.randint(1, int(p[1])) for i in range(int(p[0]))]
     elif re.match(re.compile("^[0-9]+$"), s):
-        rolls = [int[s]]
+        rolls = [int(s)]
     else:
         print("You fucked up")
         rolls = [0]
