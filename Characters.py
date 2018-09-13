@@ -53,9 +53,9 @@ class Characters:
         self.bonus = self.bonus["bonus"]
 
     def edit_menu(self, choice=None):
-        '''
+        """
         uses recursion to select which character global to edit
-        '''
+        """
         if choice is None:
             self.break_loop = False
         while self.break_loop is False:
@@ -70,10 +70,10 @@ class Characters:
                         choice = None
 
     def edit(self, category):
-        '''
+        """
         Allows editing of attributes, skills, and secondary attributes.
         :param category: Which category to edit
-        '''
+        """
 
         self.t_list = [self.attributes, self.skills, self.secondary]
         stuff = ["Attributes", "Skills", "Secondary Attributes"]
@@ -124,12 +124,12 @@ class Characters:
             return False
 
     def calc_base(self, attributes, eq):
-        '''
+        """
         Calculates a given equation by replacing strings with variables.
         :param attributes: Dict of attributes with "var" keys.
         :param eq: Equation to perform.
         :return: Solution of the equation.
-        '''
+        """
 
         attributes = {key: attributes[key]["val"] for key in attributes.keys()}
         for key in attributes:

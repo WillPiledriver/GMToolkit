@@ -1,5 +1,6 @@
 from helper import *
 
+
 class Combat:
     def __init__(self, client, db_name, npc_handle, weapons_handle, armors_handle, characters_handle, party_handle):
         self.npc = npc_handle
@@ -34,7 +35,7 @@ class Combat:
         while self.break_loop is False:
             if choice is None:
                 self.combat_menu(choice=gen_menu(["Start new combat session", "Open session", "Back"],
-                                               "Combat Menu"))
+                                 "Combat Menu"))
             else:
                 if choice == 2:
                     self.break_loop = True
@@ -124,13 +125,13 @@ class Combat:
         return name in self.party_members
 
     def skirmish(self, session_name):
-        '''
+        """
         First: Reorganize data by removing unnecessary keys, and combining skills, attributes, and secondary statistics
         Second: Generate weapons and armor.
         Third: Calculate bonuses
         :param session_name:
         :return:
-        '''
+        """
         session = dict(self.sessions[session_name])
         _session = dict()
         combine_these = ["skills", "attributes", "secondary"]
@@ -138,7 +139,6 @@ class Combat:
             _session[combatant_name] = dict()
             for c in combine_these:
                 _session[combatant_name].update(session[combatant_name][c])
-
 
         for combatant_name in list(_session.keys()):
             for var in list(_session[combatant_name].keys()):
@@ -148,9 +148,6 @@ class Combat:
                 _session[combatant_name]["XP"] = int(self.npc.enemies[_session[combatant_name]["NAME"]]["XP"])
             else:
                 _session[combatant_name]["XP"] = 0
-
-
-
 
         # Calculate turn order based on SE (sequence)
         turn_order = list()
@@ -194,10 +191,10 @@ class Combat:
         party_members = [name for name in list(_session.keys()) if self.is_party(name)]
         enemy_members = [name for name in list(_session.keys()) if self.is_party(name) is False]
         # Turn Order
-        round = 0
+        rounds = 0
         total_xp = 0
         while len(party_members) > 0 and len(enemy_members) > 0:
-            round += 1
+            rounds += 1
             turn = 0
             for (name, seq) in turn_order:
                 ap_used = 0
@@ -212,7 +209,8 @@ class Combat:
                     if ap_used + weapon["AP"] > ap:
                         attack = []
                     menu = attack + ["Set HP", "Pass"]
-                    choice = gen_menu(menu, "{}'s turn\t\tAP: {}\t\tHP: {}".format(name, ap - ap_used, _session[name]["HP"]), False)
+                    choice = gen_menu(menu, "{}'s turn\t\tAP: {}\t\tHP: {}".format(name, ap - ap_used,
+                                                                                   _session[name]["HP"]), False)
                     if (choice == 0) and (len(attack) > 0):
                         # Attack Target
                         defender = members[gen_menu(["{}\n\tWeapon: {}\t\tArmor: {}\t\tHP: {}"
@@ -314,9 +312,6 @@ class Combat:
                         break
 
         print("Combat complete.\n\tXP earned: {}".format(total_xp))
-
-        
-        
 
 
 class Weapons:
