@@ -145,14 +145,14 @@ class Combat:
                 _session[combatant_name][var] = _session[combatant_name][var]["val"]
             _session[combatant_name]["bonus"] = session[combatant_name]["bonus"]
             if self.is_party(combatant_name) is False:
-                _session[combatant_name]["XP"] = int(self.npc.enemies[combatant_name]["XP"])
+                _session[combatant_name]["XP"] = int(self.npc.enemies[_session[combatant_name]["NAME"]]["XP"])
             else:
                 _session[combatant_name]["XP"] = 0
 
 
 
 
-                # Calculate turn order based on SE (sequence)
+        # Calculate turn order based on SE (sequence)
         turn_order = list()
         for combatant_name in list(_session.keys()):
             turn_order.append((combatant_name, _session[combatant_name]["SE"]))
@@ -234,7 +234,7 @@ class Combat:
                     elif choice == len(menu) - 1:
                         break
                     defender_ac = _session[defender]["AC"]
-
+                    print("AC {}    {}: {}".format(defender_ac, weapon["TYPE"], _session[name][weapon["TYPE"]]))
                     ammo_damage = 0
                     ammo = None
                     if weapon["TYPE"] == "SG":
@@ -288,7 +288,7 @@ class Combat:
                             else:
                                 ammo_damage = int(r)
                         damage_bonus += ammo_damage
-                    init_dmg = ammo_damage + damage_bonus + roll_for_damage
+                    init_dmg = damage_bonus + roll_for_damage
                     print("{}dmg + {} bonus = {} TOTAL".format(roll_for_damage, damage_bonus, init_dmg))
 
                     # Final damage

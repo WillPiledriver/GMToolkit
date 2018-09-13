@@ -11,7 +11,7 @@ def main_menu():
 
 
 client = MongoClient()
-db_name = "fallout" #input("Enter name of game> ")
+db_name = input("Enter name of game> ")
 c = Characters(client, db_name)
 p = Party(client, db_name, characters_handle=c)
 w = Weapons(csv_file="data/weapons.csv")

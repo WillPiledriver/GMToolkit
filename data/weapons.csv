@@ -1,9 +1,11 @@
-"NAME","AP","TYPE","DMG","DB","RANGE","AMMO","ROUNDS"
-"molerat bite",3,"U","1d4",0,1,,
-"knife",3,"M","1d10","{MD}",1,,
-"switchblade",3,"M","1d6","{MD}",1,,
-".22 pistol",5,"SG",4,0,12,".22",7
-"brass knuckles",3,"U","1d10","{MD}",1,,
-"bone saw",4,"M","1d10","5+{MD}",1,,
-"beretta",5,"SG",6,0,17,"9mm ball",18
-"louisville slugger",4,"M","3d6","{MD}",1,,
+NAME,AP,TYPE,DMG,DB,RANGE,AMMO,ROUNDS
+molerat bite,3,U,1d4,0,1,,
+knife,3,M,1d8,{MD},1,,
+switchblade,3,M,1d6,{MD},1,,
+.22 pistol,5,SG,4,0,12,0.22,7
+brass knuckles,3,U,1d6,{MD},1,,
+bone saw,4,M,1d10,5+{MD},1,,
+beretta,5,SG,6,0,17,9mm ball,18
+louisville slugger,4,M,3d6,{MD},1,,
+wattz 1600 laser pistol,5,EW,1d12,10,35,,
+broken saw,3,M,1d12,5+{MD},1,,
