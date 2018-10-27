@@ -209,6 +209,8 @@ class Party:
                     if len(inp) == 0:
                         break
                     value = int(input("VAL> "))
+                    if "bonus" not in self.party[c]:
+                        self.party[c]["bonus"] = dict()
                     self.party[c]["bonus"][inp] = value
                 self.save()
                 return True

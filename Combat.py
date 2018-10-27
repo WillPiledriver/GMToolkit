@@ -193,10 +193,14 @@ class Combat:
         # Turn Order
         rounds = 0
         total_xp = 0
+
         while len(party_members) > 0 and len(enemy_members) > 0:
+
             rounds += 1
             turn = 0
             for (name, seq) in turn_order:
+                if name not in _session:
+                    continue
                 ap_used = 0
                 ap = _session[name]["AP"]
                 turn += 1
@@ -204,11 +208,12 @@ class Combat:
                 in_party = self.is_party(name)
                 weapon = _session[name]["weapon"]
                 attack = ["Attack Target", "Attack Random"]
+                main_menu = ["Switch Weapon", "Set HP", "Pass"]
                 members = (party_members, enemy_members)[in_party]
                 while ap_used <= ap:
                     if ap_used + weapon["AP"] > ap:
                         attack = []
-                    menu = attack + ["Set HP", "Pass"]
+                    menu = attack + main_menu
                     choice = gen_menu(menu, "{}'s turn\t\tAP: {}\t\tHP: {}".format(name, ap - ap_used,
                                                                                    _session[name]["HP"]), False)
                     if (choice == 0) and (len(attack) > 0):
@@ -224,7 +229,15 @@ class Combat:
                         # Attack Random
                         defender = rand.choice(members)
                         ap_used += weapon["AP"]
-
+                    elif choice == len(menu) - 3:
+                        new_weapon = input("Enter new weapon> ")
+                        while new_weapon not in self.wh.weapons:
+                            new_weapon = input("Invalid weapon> ")
+                        wep = self.wh.generate_weapon(new_weapon)
+                        wep["NAME"] = new_weapon
+                        _session[name]["weapon"] = wep
+                        weapon = wep
+                        continue
                     elif choice == len(menu) - 2:
                         # Set HP
                         _session[name]["HP"] = int(input("New HP> "))
@@ -291,8 +304,10 @@ class Combat:
 
                     # Final damage
 
-                    dt = _session[defender]["armor"]["N"][0]
-                    dr = _session[defender]["armor"]["N"][1]
+                    dmg_type = weapon["DMG TYPE"]
+
+                    dt = _session[defender]["armor"][dmg_type][0]
+                    dr = _session[defender]["armor"][dmg_type][1]
 
                     if weapon["TYPE"] == "SG":
                         dt = dt * ammo["DT"]
@@ -306,10 +321,13 @@ class Combat:
                         print("{} HAS BEEN SLAIN GRANTING {} XP".format(defender, _session[defender]["XP"]))
                         if self.is_party(defender):
                             party_members.remove(defender)
+                            turn_order.remove((defender, _session[defender]["SE"]))
                         else:
                             enemy_members.remove(defender)
+                            turn_order.remove((defender, _session[defender]["SE"]))
                         del _session[defender]
                         break
+
 
         print("Combat complete.\n\tXP earned: {}".format(total_xp))
 
